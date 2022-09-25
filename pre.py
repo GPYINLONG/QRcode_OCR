@@ -22,9 +22,9 @@ def get_parser():
     parser.add_argument('-n', '--number', required=True, type=int,
                         help='Input the number of the picture you wanna process (jpg format needed).')
     parser.add_argument('-k', '--keyword', choices=['otsu', 'adaptive'], required=True,
-                        help=r'Choose the algorithm of the threshold function between \'otsu\' and \'adaptive\'.')
+                        help=r'Choose the algorithm of the threshold function between "otsu" and "adaptive".')
     parser.add_argument('-s', '--scale', required=True, nargs='+',
-                        help='Input a (m, n) tuple to divide the picture into m × n blocks.')
+                        help='Input m n to divide the picture into m × n blocks.')
 
     return parser
 
