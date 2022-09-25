@@ -110,7 +110,6 @@ def show_blocks(divided):
     :return: None
     """
     assert (len(divided.shape) == 5 or len(divided.shape) == 4)
-    del_file('./blocks/')
     m, n = divided.shape[0], divided.shape[1]
     for i in range(m):
         for j in range(n):

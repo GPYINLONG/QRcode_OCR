@@ -7,7 +7,6 @@
 
 import cv2
 import pre
-import numpy as np
 
 
 parser = pre.get_parser()
@@ -25,6 +24,7 @@ print(10 * '*' + '1st STEP: Divide' + 10 * '*')
 divided, dividedGrey = pre.divide(image, r, c)
 
 print(10 * '*' + '2nd STEP: Show the blocks' + 10 * '*')
+pre.del_file('./blocks/')
 pre.show_blocks(divided)
 pre.show_blocks(dividedGrey)
 
