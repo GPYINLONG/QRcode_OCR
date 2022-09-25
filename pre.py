@@ -14,9 +14,11 @@ def get_parser():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('-n', '-number', required=True, type=int,
-                        help='Please input the number of the picture you wanna process.')
+                        help='Input the number of the picture you wanna process.')
     parser.add_argument('-k', '-keyword', choices=['otsu', 'adaptive'], required=True,
-                        help=r'Please choose the algorithm of the threshold function between \'otsu\' and \'adaptive\'.')
+                        help=r'Choose the algorithm of the threshold function between \'otsu\' and \'adaptive\'.')
+    parser.add_argument('-s', '-scale', required=True,
+                        help='Input a (m, n) tuple to divide the picture into m × n blocks.')
 
     return parser
 
@@ -59,6 +61,38 @@ def divide(img, m, n):
     return divided
 
 
+def show_blocks(divided):
+    m, n = divided.shape[0], divided.shape[1]
+    for i in range(m):
+        for j in range(n):
+            plt.subplot(m, n, i * n + j + 1)
+            cv2.imwrite('./blocks/block'+str(i * n + j + 1)+'.jpg', divided[i, j, :])
+            plt.imshow(cv2.cvtColor(divided[i, j, :], cv2.COLOR_BGR2RGB))
+            plt.axis('off')
+            plt.title('block'+str(i * n + j + 1), fontdict={'weight': 'normal', 'size': 10})
+            plt.subplots_adjust(left=0.125,
+                                bottom=0.1,
+                                right=0.9,
+                                top=0.9,
+                                wspace=0.2,
+                                hspace=0.35)
+
+    plt.show()
+
+
 if __name__ == '__main__':
     img = cv2.imread('./QRcode/1.jpeg')
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    fig1 = plt.figure('Origin')
+    plt.axis('off')
+    plt.imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+
+    thr = threshold(gray)
+    fig2 = plt.figure('OTSU')
+    plt.axis('off')
+    plt.imshow(thr, cmap='Greys_r', vmin=0, vmax=255)
+
+    divide_img = divide(img, 4, 4)
+    fig2 = plt.figure('Blocks')
+    show_blocks(divide_img)
+
