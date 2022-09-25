@@ -81,18 +81,17 @@ def show_blocks(divided):
 
 
 if __name__ == '__main__':
-    img = cv2.imread('./QRcode/1.jpeg')
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    image = cv2.imread('./QRcode/1.jpeg')
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     fig1 = plt.figure('Origin')
     plt.axis('off')
-    plt.imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+    plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
 
     thr = threshold(gray)
     fig2 = plt.figure('OTSU')
     plt.axis('off')
     plt.imshow(thr, cmap='Greys_r', vmin=0, vmax=255)
 
-    divide_img = divide(img, 4, 4)
-    fig2 = plt.figure('Blocks')
+    divide_img = divide(image, 4, 4)
+    fig3 = plt.figure('Blocks')
     show_blocks(divide_img)
-
