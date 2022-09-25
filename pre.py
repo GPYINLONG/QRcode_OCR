@@ -8,16 +8,22 @@ import cv2
 import argparse
 import matplotlib.pyplot as plt
 import numpy as np
+import os
 
 
 def get_parser():
+    """
+    Get three arguments: "number", "keyword" and "scale", and they are all needed.
+
+    :return: parser
+    """
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-n', '-number', required=True, type=int,
-                        help='Input the number of the picture you wanna process.')
-    parser.add_argument('-k', '-keyword', choices=['otsu', 'adaptive'], required=True,
+    parser.add_argument('-n', '--number', required=True, type=int,
+                        help='Input the number of the picture you wanna process (jpg format needed).')
+    parser.add_argument('-k', '--keyword', choices=['otsu', 'adaptive'], required=True,
                         help=r'Choose the algorithm of the threshold function between \'otsu\' and \'adaptive\'.')
-    parser.add_argument('-s', '-scale', required=True,
+    parser.add_argument('-s', '--scale', required=True, nargs='+',
                         help='Input a (m, n) tuple to divide the picture into m × n blocks.')
 
     return parser
@@ -25,6 +31,17 @@ def get_parser():
 
 def threshold(img, keyword='otsu', max_val=0, adaptive_method=cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
               threshold_type=cv2.THRESH_BINARY, block_size=3, c=2):
+    """
+    Choose Binarization Methods between "otsu" and "adaptive".
+    :param img: Input grey image.
+    :param keyword: 'otsu' or 'adaptive'.
+    :param max_val:
+    :param adaptive_method:
+    :param threshold_type:
+    :param block_size:
+    :param c:
+    :return: None
+    """
     if keyword == 'adaptive':
         th = cv2.adaptiveThreshold(img, max_val, adaptive_method, threshold_type, block_size, c)
         return th
@@ -37,6 +54,13 @@ def threshold(img, keyword='otsu', max_val=0, adaptive_method=cv2.ADAPTIVE_THRES
 
 # 将图片分为m×n块，返回一个5维BGR矩阵，和一个4维二值图矩阵
 def divide(img, m, n):
+    """
+    Divide a image into m × n blocks and return a 5-dim BGR matrix and a 4-dim grey matrix.
+    :param img: Any.
+    :param m: m raws.
+    :param n: n columns.
+    :return: divided, divided_grey.
+    """
     h, w = img.shape[0], img.shape[1]
     grid_h = int(h * 1.0 / m)
     grid_w = int(w * 1.0 / n)
@@ -63,13 +87,40 @@ def divide(img, m, n):
     return divided, divided_grey
 
 
+def del_file(path):
+    """
+    删除指定目录下的文件，保留文件夹
+    :param path:
+    :return:
+    """
+    for i in os.listdir(path):
+        # 如果存在文件夹进行递归
+        if os.path.isdir(os.path.join(path, i)):
+            del_file(os.path.join(path, i))
+        # 如果是文件进行删除
+        elif os.path.isfile:
+            os.remove(os.path.join(path, i))
+
+
+# 将divide分块的图片展示并保存，输入4维二值图矩阵或5维BGR矩阵
 def show_blocks(divided):
+    """
+    Show and save the blocks you got through the "divide" function.
+    :param divided: 5-dim or 4-dim array.
+    :return: None
+    """
+    assert (len(divided.shape) == 5 or len(divided.shape) == 4)
+    del_file('./blocks/')
     m, n = divided.shape[0], divided.shape[1]
     for i in range(m):
         for j in range(n):
             plt.subplot(m, n, i * n + j + 1)
-            cv2.imwrite('./blocks/block'+str(i * n + j + 1)+'.jpg', divided[i, j, :])
-            plt.imshow(cv2.cvtColor(divided[i, j, :], cv2.COLOR_BGR2RGB))
+            if len(divided.shape) == 5:
+                cv2.imwrite('./blocks/block_'+str(i * n + j + 1)+'.jpg', divided[i, j, :])
+                plt.imshow(cv2.cvtColor(divided[i, j, :], cv2.COLOR_BGR2RGB))
+            elif len(divided.shape) == 4:
+                cv2.imwrite('./blocks/blockGrey_' + str(i * n + j + 1) + '.jpg', divided[i, j, :])
+                plt.imshow(divided[i, j, :], cmap='Greys_r', vmin=0, vmax=255)
             plt.axis('off')
             plt.title('block'+str(i * n + j + 1), fontdict={'weight': 'normal', 'size': 10})
             plt.subplots_adjust(left=0.125,
@@ -84,6 +135,12 @@ def show_blocks(divided):
 
 # 将divide函数返回的blocks分别进行直方图均衡化和二值化并返回合成的4维二值图矩阵
 def process_blocks(divided_grey, keyword='otsu'):
+    """
+    Process the blocks respectively through histogram equalization and "otsu" method.
+    :param divided_grey: 4-dim array.
+    :param keyword: 'otsu' or 'activate'.
+    :return: blocks_grey.
+    """
     assert (len(divided_grey.shape) == 4)
     blocks_grey = np.zeros(divided_grey.shape)
     m, n = divided_grey.shape[0], divided_grey.shape[1]
@@ -97,6 +154,11 @@ def process_blocks(divided_grey, keyword='otsu'):
 
 # 将处理后的4维二值图矩阵进行合并，并返回最终合并后的图像
 def avengers_assemble(blocks_grey):
+    """
+    Combine all the blocks.
+    :param blocks_grey: 4-dim array.
+    :return: assembled
+    """
     assert (len(blocks_grey.shape) == 4)
 
     h = blocks_grey.shape[0] * blocks_grey.shape[2]
@@ -106,12 +168,12 @@ def avengers_assemble(blocks_grey):
     for i in range(m):
         for j in range(n):
             assembled[i * blocks_grey.shape[2]: (i + 1) * blocks_grey.shape[2],
-                      j * blocks_grey.shape[3]: (j + 1) * blocks_grey.shape[3]] = blocks_grey[m, n, ...]
+                      j * blocks_grey.shape[3]: (j + 1) * blocks_grey.shape[3]] = blocks_grey[i, j, ...]
     return assembled
 
 
 if __name__ == '__main__':
-    image = cv2.imread('./QRcode/1.jpeg')
+    image = cv2.imread('./QRcode/1.jpg')
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     fig1 = plt.figure('Origin')
     plt.axis('off')
@@ -122,6 +184,6 @@ if __name__ == '__main__':
     plt.axis('off')
     plt.imshow(thr, cmap='Greys_r', vmin=0, vmax=255)
 
-    divide_img, _ = divide(image, 4, 4)
+    divideImg, _ = divide(image, 4, 4)
     fig3 = plt.figure('Blocks')
-    show_blocks(divide_img)
+    show_blocks(divideImg)
