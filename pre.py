@@ -35,7 +35,7 @@ def threshold(img, keyword='otsu', max_val=0, adaptive_method=cv2.ADAPTIVE_THRES
         print('Keyword Error!')
 
 
-# 将图片分为m×n块
+# 将图片分为m×n块，返回一个5维BGR矩阵，和一个4维二值图矩阵
 def divide(img, m, n):
     h, w = img.shape[0], img.shape[1]
     grid_h = int(h * 1.0 / m)
@@ -52,13 +52,15 @@ def divide(img, m, n):
     gy = gy.astype(np.int)
 
     divided = np.zeros([m, n, grid_h, grid_w, 3], np.uint8)  # 五维张量
+    divided_grey = np.zeros([m, n, grid_h, grid_w], np.uint8)  # 四维张量
 
     for i in range(m):
         for j in range(n):
             divided[i, j, ...] = resized[gy[i, j]:gy[i + 1, j + 1],
                                          gx[i, j]:gx[i + 1, j + 1], :]
+            divided_grey[i, j, ...] = cv2.cvtColor(divided[i, j, ...], cv2.COLOR_BGR2GRAY)
 
-    return divided
+    return divided, divided_grey
 
 
 def show_blocks(divided):
@@ -80,6 +82,34 @@ def show_blocks(divided):
     plt.show()
 
 
+# 将divide函数返回的blocks分别进行直方图均衡化和二值化并返回合成的4维二值图矩阵
+def process_blocks(divided_grey, keyword='otsu'):
+    assert (len(divided_grey.shape) == 4)
+    blocks_grey = np.zeros(divided_grey.shape)
+    m, n = divided_grey.shape[0], divided_grey.shape[1]
+    for i in range(m):
+        for j in range(n):
+            temp = cv2.equalizeHist(divided_grey[i, j, ...])
+            blocks_grey[i, j, ...] = threshold(temp, keyword=keyword)
+
+    return blocks_grey
+
+
+# 将处理后的4维二值图矩阵进行合并，并返回最终合并后的图像
+def avengers_assemble(blocks_grey):
+    assert (len(blocks_grey.shape) == 4)
+
+    h = blocks_grey.shape[0] * blocks_grey.shape[2]
+    w = blocks_grey.shape[1] * blocks_grey.shape[3]
+    assembled = np.zeros((h, w))
+    m, n = blocks_grey.shape[0], blocks_grey.shape[1]
+    for i in range(m):
+        for j in range(n):
+            assembled[i * blocks_grey.shape[2]: (i + 1) * blocks_grey.shape[2],
+                      j * blocks_grey.shape[3]: (j + 1) * blocks_grey.shape[3]] = blocks_grey[m, n, ...]
+    return assembled
+
+
 if __name__ == '__main__':
     image = cv2.imread('./QRcode/1.jpeg')
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -92,6 +122,6 @@ if __name__ == '__main__':
     plt.axis('off')
     plt.imshow(thr, cmap='Greys_r', vmin=0, vmax=255)
 
-    divide_img = divide(image, 4, 4)
+    divide_img, _ = divide(image, 4, 4)
     fig3 = plt.figure('Blocks')
     show_blocks(divide_img)
