@@ -55,7 +55,8 @@ def threshold(img, keyword='otsu', max_val=0, adaptive_method=cv2.ADAPTIVE_THRES
 # 将图片分为m×n块，返回一个5维BGR矩阵，和一个4维二值图矩阵
 def divide(img, m, n):
     """
-    Divide a image into m × n blocks and return a 5-dim BGR matrix and a 4-dim grey matrix.
+    Divide an image into m × n blocks and return a 5-dim BGR matrix and a 4-dim grey matrix,
+    or just a 4-dim grey matrix.
     :param img: Any.
     :param m: m raws.
     :param n: n columns.
@@ -75,16 +76,24 @@ def divide(img, m, n):
     gx = gx.astype(np.int)
     gy = gy.astype(np.int)
 
-    divided = np.zeros([m, n, grid_h, grid_w, 3], np.uint8)  # 五维张量
     divided_grey = np.zeros([m, n, grid_h, grid_w], np.uint8)  # 四维张量
+    if len(img.shape) == 3:
+        divided = np.zeros([m, n, grid_h, grid_w, 3], np.uint8)  # 五维张量
 
-    for i in range(m):
-        for j in range(n):
-            divided[i, j, ...] = resized[gy[i, j]:gy[i + 1, j + 1],
+        for i in range(m):
+            for j in range(n):
+                divided[i, j, ...] = resized[gy[i, j]:gy[i + 1, j + 1],
                                          gx[i, j]:gx[i + 1, j + 1], :]
-            divided_grey[i, j, ...] = cv2.cvtColor(divided[i, j, ...], cv2.COLOR_BGR2GRAY)
+                divided_grey[i, j, ...] = cv2.cvtColor(divided[i, j, ...], cv2.COLOR_BGR2GRAY)
 
-    return divided, divided_grey
+        return divided, divided_grey
+    else:
+        for i in range(m):
+            for j in range(n):
+                divided_grey[i, j, ...] = resized[gy[i, j]:gy[i + 1, j + 1],
+                                         gx[i, j]:gx[i + 1, j + 1]]
+
+        return divided_grey
 
 
 def del_file(path):
@@ -133,9 +142,10 @@ def show_blocks(divided):
 
 
 # 将divide函数返回的blocks分别进行直方图均衡化和二值化并返回合成的4维二值图矩阵
-def process_blocks(divided_grey, keyword='otsu'):
+def process_blocks(divided_grey, keyword='otsu', equalize=True):
     """
     Process the blocks respectively through histogram equalization and "otsu" method.
+    :param equalize: bool
     :param divided_grey: 4-dim array.
     :param keyword: 'otsu' or 'activate'.
     :return: blocks_grey.
@@ -145,7 +155,10 @@ def process_blocks(divided_grey, keyword='otsu'):
     m, n = divided_grey.shape[0], divided_grey.shape[1]
     for i in range(m):
         for j in range(n):
-            temp = cv2.equalizeHist(divided_grey[i, j, ...])
+            if equalize:
+                temp = cv2.equalizeHist(divided_grey[i, j, ...])
+            else:
+                temp = divided_grey[i, j, ...]
             blocks_grey[i, j, ...] = threshold(temp, keyword=keyword)
 
     return blocks_grey
