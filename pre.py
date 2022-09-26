@@ -83,7 +83,7 @@ def divide(img, m, n):
         for i in range(m):
             for j in range(n):
                 divided[i, j, ...] = resized[gy[i, j]:gy[i + 1, j + 1],
-                                         gx[i, j]:gx[i + 1, j + 1], :]
+                                             gx[i, j]:gx[i + 1, j + 1], :]
                 divided_grey[i, j, ...] = cv2.cvtColor(divided[i, j, ...], cv2.COLOR_BGR2GRAY)
 
         return divided, divided_grey
@@ -91,7 +91,7 @@ def divide(img, m, n):
         for i in range(m):
             for j in range(n):
                 divided_grey[i, j, ...] = resized[gy[i, j]:gy[i + 1, j + 1],
-                                         gx[i, j]:gx[i + 1, j + 1]]
+                                                  gx[i, j]:gx[i + 1, j + 1]]
 
         return divided_grey
 
@@ -124,13 +124,13 @@ def show_blocks(divided):
         for j in range(n):
             plt.subplot(m, n, i * n + j + 1)
             if len(divided.shape) == 5:
-                cv2.imwrite('./blocks/block_'+str(i * n + j + 1)+'.jpg', divided[i, j, :])
+                cv2.imwrite('./blocks/block_' + str(i * n + j + 1) + '.jpg', divided[i, j, :])
                 plt.imshow(cv2.cvtColor(divided[i, j, :], cv2.COLOR_BGR2RGB))
             elif len(divided.shape) == 4:
                 cv2.imwrite('./blocks/blockGrey_' + str(i * n + j + 1) + '.jpg', divided[i, j, :])
                 plt.imshow(divided[i, j, :], cmap='Greys_r', vmin=0, vmax=255)
             plt.axis('off')
-            plt.title('block'+str(i * n + j + 1), fontdict={'weight': 'normal', 'size': 10})
+            plt.title('block' + str(i * n + j + 1), fontdict={'weight': 'normal', 'size': 10})
             plt.subplots_adjust(left=0.125,
                                 bottom=0.1,
                                 right=0.9,

@@ -56,7 +56,6 @@ if __name__ == '__main__':
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
-
     print('step 2: get contour')
 
     cv2.imshow('outline', image)

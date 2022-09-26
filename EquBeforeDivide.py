@@ -38,4 +38,3 @@ assembled = pre.avengers_assemble(blocksGrey)
 
 print(10 * '*' + '6th STEP: Output the final QR code' + 10 * '*')
 cv2.imwrite('./QRcode/OUTPUT_EquBf.jpg', assembled)
-
