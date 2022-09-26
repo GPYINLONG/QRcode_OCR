@@ -29,8 +29,8 @@ def get_parser():
     return parser
 
 
-def threshold(img, keyword='otsu', max_val=0, adaptive_method=cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-              threshold_type=cv2.THRESH_BINARY, block_size=3, c=2):
+def threshold(img, keyword='otsu', max_val=200, adaptive_method=cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+              threshold_type=cv2.THRESH_BINARY, block_size=5, c=3):
     """
     Choose Binarization Methods between "otsu" and "adaptive".
     :param img: Input grey image.

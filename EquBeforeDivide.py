@@ -31,7 +31,7 @@ pre.del_file('./blocks/')
 pre.show_blocks(dividedGrey)
 
 print(10 * '*' + '4th STEP: Process the blocks' + 10 * '*')
-blocksGrey = pre.process_blocks(dividedGrey, equalize=False)
+blocksGrey = pre.process_blocks(dividedGrey, k, equalize=False)
 
 print(10 * '*' + '5th STEP: Combine the blocks' + 10 * '*')
 assembled = pre.avengers_assemble(blocksGrey)
