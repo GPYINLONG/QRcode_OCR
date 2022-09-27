@@ -30,3 +30,5 @@
 > [3] python-opencv图像切块 https://blog.csdn.net/hymn1993/article/details/122789718
 > 
 > [4] 二维码的特征定位和信息识别 https://blog.csdn.net/iamqianrenzhan/article/details/79117119
+> 
+> [5] OpenCV二维码检测与定位 http://www.manongjc.com/detail/50-whhxujelpahjvil.html
