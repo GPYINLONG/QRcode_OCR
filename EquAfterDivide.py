@@ -6,7 +6,7 @@
 
 
 import cv2
-import pre
+import Pre
 
 
 parser = pre.get_parser()

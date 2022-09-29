@@ -9,7 +9,7 @@ import numpy as np
 
 
 # TODO(机智的枫树): 本部分目的为锁定二维码范围并且切割放大
-# 找出矩形的四个角点
+# 找出二维码的三个角的定位角点
 def order_points(pts):
     rect = np.zeros((4, 2), dtype='float32')
     s = pts.sum(axis=1)
@@ -39,25 +39,35 @@ def resize(img, wth=None, ht=None, inter=cv2.INTER_AREA):
     return resized
 
 
+def preprocess(img, show=True):
+    """
+    Preprocess the image input.
+    :param img: 
+    :param show: Bool
+    :return: th
+    """
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    gray = cv2.blur(gray, (3, 3))  # 应用平滑滤波去除部分噪音点
+    gray_equ = cv2.equalizeHist(gray)
+    th = cv2.threshold(gray_equ, 112, 255, cv2.THRESH_BINARY)
+
+    if show:
+        cv2.namedWindow('gray')
+        cv2.namedWindow('threshold')
+        cv2.imshow('gray', gray_equ)
+        cv2.imshow('threshold', th)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+    return th
+
+
 if __name__ == '__main__':
     image = cv2.imread('./QRcode/3.png')
+    orig = image.copy()
+    th1 = preprocess(orig)
     height = 500
     ratio = image.shape[0] / float(height)
-    orig = image.copy()
+
     image = resize(image, ht=height)
 
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    gray = cv2.GaussianBlur(gray, (5, 5), 0)  # 应用高斯滤波去除部分噪音点
-    edged = cv2.Canny(gray, 75, 200)
 
-    print('step 1: edge detect')
-    cv2.imshow('orig', image)
-    cv2.imshow('edged', edged)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
-
-    print('step 2: get contour')
-
-    cv2.imshow('outline', image)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
