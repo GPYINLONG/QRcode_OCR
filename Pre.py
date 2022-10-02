@@ -13,7 +13,7 @@ import os
 
 def get_parser():
     """
-    Get three arguments: "number", "keyword" and "scale", and they are all needed.
+    Get three arguments: "number", "keyword" and "scale", and they are all needed
 
     :return: parser
     """
@@ -32,9 +32,9 @@ def get_parser():
 def threshold(img, keyword='otsu', max_val=200, adaptive_method=cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
               threshold_type=cv2.THRESH_BINARY, block_size=5, c=3):
     """
-    Choose Binarization Methods between "otsu" and "adaptive".
-    :param img: Input grey image.
-    :param keyword: 'otsu' or 'adaptive'.
+    Choose Binarization Methods between "otsu" and "adaptive"
+    :param img: Input grey image
+    :param keyword: 'otsu' or 'adaptive'
     :param max_val:
     :param adaptive_method:
     :param threshold_type:
@@ -56,11 +56,11 @@ def threshold(img, keyword='otsu', max_val=200, adaptive_method=cv2.ADAPTIVE_THR
 def divide(img, m, n):
     """
     Divide an image into m × n blocks and return a 5-dim BGR matrix and a 4-dim grey matrix,
-    or just a 4-dim grey matrix.
-    :param img: Any.
-    :param m: m raws.
-    :param n: n columns.
-    :return: divided, divided_grey.
+    or just a 4-dim grey matrix
+    :param img: Any
+    :param m: m raws
+    :param n: n columns
+    :return: divided, divided_grey
     """
     h, w = img.shape[0], img.shape[1]
     grid_h = int(h * 1.0 / m)
@@ -114,8 +114,8 @@ def del_file(path):
 # 将divide分块的图片展示并保存，输入4维二值图矩阵或5维BGR矩阵
 def show_blocks(divided):
     """
-    Show and save the blocks you got through the "divide" function.
-    :param divided: 5-dim or 4-dim array.
+    Show and save the blocks you got through the "divide" function
+    :param divided: 5-dim or 4-dim array
     :return: None
     """
     assert (len(divided.shape) == 5 or len(divided.shape) == 4)
@@ -144,11 +144,11 @@ def show_blocks(divided):
 # 将divide函数返回的blocks分别进行直方图均衡化和二值化并返回合成的4维二值图矩阵
 def process_blocks(divided_grey, keyword='otsu', equalize=True):
     """
-    Process the blocks respectively through histogram equalization and "otsu" method.
+    Process the blocks respectively through histogram equalization and "otsu" method
     :param equalize: bool
-    :param divided_grey: 4-dim array.
-    :param keyword: 'otsu' or 'activate'.
-    :return: blocks_grey.
+    :param divided_grey: 4-dim array
+    :param keyword: 'otsu' or 'activate'
+    :return: blocks_grey
     """
     assert (len(divided_grey.shape) == 4)
     blocks_grey = np.zeros(divided_grey.shape)
@@ -167,8 +167,8 @@ def process_blocks(divided_grey, keyword='otsu', equalize=True):
 # 将处理后的4维二值图矩阵进行合并，并返回最终合并后的图像
 def avengers_assemble(blocks_grey):
     """
-    Combine all the blocks.
-    :param blocks_grey: 4-dim array.
+    Combine all the blocks
+    :param blocks_grey: 4-dim array
     :return: assembled
     """
     assert (len(blocks_grey.shape) == 4)
