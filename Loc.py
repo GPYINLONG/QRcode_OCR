@@ -41,7 +41,7 @@ def resize(img, wth=None, ht=None, inter=cv2.INTER_AREA):
 
 def preprocess(img, show=True):
     """
-    Preprocess the image input.
+    Preprocess the image input
     :param img: 
     :param show: Bool
     :return: th
@@ -69,5 +69,3 @@ if __name__ == '__main__':
     ratio = image.shape[0] / float(height)
 
     image = resize(image, ht=height)
-
-

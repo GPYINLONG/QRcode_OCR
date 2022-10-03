@@ -25,6 +25,8 @@ def get_parser():
                         help=r'Choose the algorithm of the threshold function between "otsu" and "adaptive".')
     parser.add_argument('-s', '--scale', required=True, nargs='+',
                         help='Input m n to divide the picture into m × n blocks.')
+    parser.add_argument('-o', '--output', required=True,
+                        help='Input o to change the number of the output picture.')
 
     return parser
 
@@ -142,9 +144,10 @@ def show_blocks(divided):
 
 
 # 将divide函数返回的blocks分别进行直方图均衡化和二值化并返回合成的4维二值图矩阵
-def process_blocks(divided_grey, keyword='otsu', equalize=True):
+def process_blocks(divided_grey, keyword='otsu', equalize=True, blur='after'):
     """
     Process the blocks respectively through histogram equalization and "otsu" method
+    :param blur: choose between "before" and "after" to decide the blur being before or after equalization.
     :param equalize: bool
     :param divided_grey: 4-dim array
     :param keyword: 'otsu' or 'activate'
@@ -155,10 +158,14 @@ def process_blocks(divided_grey, keyword='otsu', equalize=True):
     m, n = divided_grey.shape[0], divided_grey.shape[1]
     for i in range(m):
         for j in range(n):
-            if equalize:
-                temp = cv2.equalizeHist(divided_grey[i, j, ...])
+            if blur == 'before':  # 在直方图均衡化之前进行平滑滤波
+                temp = cv2.blur(divided_grey[i, j, ...], (5, 5))
             else:
                 temp = divided_grey[i, j, ...]
+            if equalize:
+                temp = cv2.equalizeHist(temp)
+            if blur == 'after':  # 在直方图均衡化之后进行平滑滤波
+                temp = cv2.blur(temp, (5, 5))
             blocks_grey[i, j, ...] = threshold(temp, keyword=keyword)
 
     return blocks_grey
