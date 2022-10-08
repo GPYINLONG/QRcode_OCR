@@ -41,7 +41,7 @@ def resize(img, wth=None, ht=None, inter=cv2.INTER_AREA):
 
 def preprocess(img, show=True):
     """
-    Preprocess the image input
+    Preprocess the image input image
     :param img: 
     :param show: Bool
     :return: th
@@ -49,7 +49,7 @@ def preprocess(img, show=True):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     gray = cv2.blur(gray, (3, 3))  # 应用平滑滤波去除部分噪音点
     gray_equ = cv2.equalizeHist(gray)
-    th = cv2.threshold(gray_equ, 112, 255, cv2.THRESH_BINARY)
+    ret, th = cv2.threshold(gray_equ, 112, 255, cv2.THRESH_BINARY)
 
     if show:
         cv2.namedWindow('gray')
@@ -61,10 +61,41 @@ def preprocess(img, show=True):
     return th
 
 
+def find_contour(img):
+    cnts2 = []
+    drawing = cv2.cvtColor(img.copy(), cv2.COLOR_GRAY2BGR)
+    cnts, hierarchy = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+    # RETR_TREE以树形结构组织输出，使得hierarchy的四列分别对应下一个轮廓编号、上一个轮廓编号、父轮廓编号、子轮廓编号，该值为负数表示没有对应项。
+    for i in range(len(cnts)):
+        if hierarchy[0, i, 2] == -1:
+            continue
+        else:
+            temp1 = hierarchy[0, i, 2]  # 第一个子轮廓的索引
+            if hierarchy[0, temp1, 2] == -1:
+                continue
+            else:
+                temp2 = hierarchy[0, temp1, 2]  # 第二个子轮廓的索引
+                # 记录搜索到的两个子轮廓并存储其编号
+                len1 = cv2.arcLength(cnts[i], closed=True)
+                len2 = cv2.arcLength(cnts[temp1], closed=True)
+                if abs(len1 / len2 - 2) <= 1:
+                    drawing = cv2.drawContours(drawing, cnts, i, (0, 0, 255), 2)
+                    cnts2.append(cnts[i])
+                    cnts2.append(cnts[temp1])
+                    cnts2.append(cnts[temp2])
+
+    cv2.imshow('Contours', drawing)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+    print(cnts2)
+    print(len(cnts2))
+
+
 if __name__ == '__main__':
-    image = cv2.imread('./QRcode/3.png')
+    image = cv2.imread('./QRcode/2.jpg')
     orig = image.copy()
     th1 = preprocess(orig)
+    find_contour(th1)
     height = 500
     ratio = image.shape[0] / float(height)
 
