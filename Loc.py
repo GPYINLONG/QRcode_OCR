@@ -49,7 +49,8 @@ def preprocess(img, show=True):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     gray = cv2.blur(gray, (3, 3))  # 应用平滑滤波去除部分噪音点
     gray_equ = cv2.equalizeHist(gray)
-    ret, th = cv2.threshold(gray_equ, 112, 255, cv2.THRESH_BINARY)
+    # ret, th = cv2.threshold(gray_equ, 112, 255, cv2.THRESH_BINARY)
+    ret, th = cv2.threshold(gray_equ, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)  # otsu效果更好
 
     if show:
         cv2.namedWindow('gray')
@@ -61,11 +62,11 @@ def preprocess(img, show=True):
     return th
 
 
-def find_contour(img):
+def find_contour(img, draw=True):
     cnts2 = []
     drawing = cv2.cvtColor(img.copy(), cv2.COLOR_GRAY2BGR)
     cnts, hierarchy = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
-    # RETR_TREE以树形结构组织输出，使得hierarchy的四列分别对应下一个轮廓编号、上一个轮廓编号、父轮廓编号、子轮廓编号，该值为负数表示没有对应项。
+    # RETR_TREE以树形结构组织输出，使得hierarchy的四列分别对应下一个轮廓编号、上一个轮廓编号、子轮廓编号、父轮廓编号，该值为负数表示没有对应项。
     for i in range(len(cnts)):
         if hierarchy[0, i, 2] == -1:
             continue
@@ -75,18 +76,21 @@ def find_contour(img):
                 continue
             else:
                 temp2 = hierarchy[0, temp1, 2]  # 第二个子轮廓的索引
-                # 记录搜索到的两个子轮廓并存储其编号
                 len1 = cv2.arcLength(cnts[i], closed=True)
                 len2 = cv2.arcLength(cnts[temp1], closed=True)
-                if abs(len1 / len2 - 2) <= 1:
-                    drawing = cv2.drawContours(drawing, cnts, i, (0, 0, 255), 2)
+                len3 = cv2.arcLength(cnts[temp2], closed=True)
+                if abs(len1 / len2 - 2) <= 1 and abs(len2 / len3 - 2) <= 1:  # 筛选满足长度比例的轮廓
+                    drawing = cv2.drawContours(drawing, cnts, i, (0, 0, 255), 3)
+                    # 记录搜索到的两个子轮廓并存储其编号
                     cnts2.append(cnts[i])
                     cnts2.append(cnts[temp1])
                     cnts2.append(cnts[temp2])
-
+    # drawing = cv2.drawContours(drawing, cnts2, -1, (0, 0, 255), 3)
     cv2.imshow('Contours', drawing)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
+    if draw:
+        cv2.imwrite('./QRcode/Contours.jpg', drawing)
     print(cnts2)
     print(len(cnts2))
 
