@@ -10,17 +10,6 @@ import numpy as np
 
 # TODO(机智的枫树)：本部分目的为锁定二维码范围并且切割放大
 # 找出二维码的三个角的定位角点
-def order_points(pts):
-    rect = np.zeros((4, 2), dtype='float32')
-    s = pts.sum(axis=1)
-    rect[0] = pts[np.argmin(s)]
-    rect[2] = pts[np.argmax(s)]
-
-    diff = np.diff(pts, axis=1)
-    rect[1] = pts[np.argmin(diff)]
-    rect[3] = pts[np.argmax(diff)]
-
-    return rect
 
 
 # 将图片等比例缩小或放大
@@ -88,7 +77,7 @@ def find_contour(img, draw=True):
                 if abs(len1 / len2 - 2) <= 1 and abs(len2 / len3 - 2) <= 1:  # 筛选满足长度比例的轮廓
                     # drawing = cv2.drawContours(drawing, cnts, i, (0, 0, 255), 3)
                     # 记录搜索到的两个子轮廓并存储其编号
-                    cnts2.append(cnts[i])
+                    cnts2.append(np.squeeze(cnts[i]))
                     # cnts2.append(cnts[temp1])
                     # cnts2.append(cnts[temp2])
     drawing = cv2.drawContours(drawing, cnts2, -1, (0, 0, 255), 3)
@@ -98,18 +87,21 @@ def find_contour(img, draw=True):
     cv2.destroyAllWindows()
     if draw:
         cv2.imwrite('./QRcode/Contours.jpg', drawing)
-
+    print(len(cnts2))
+    print(cnts2[0].shape)
     return cnts2
 
 
 def corners_order(cnts: list):
     """
     Input a list containing arrays and return a list containing 3 "ndarray" corners, with their 4 corners in order of
-    left up, right up, right down and left down
+    left up, right up, left down and right down
     :param cnts: List
     :return: List
     """
-    rect = []
+    # TODO(机智的枫树)：出现问题，现有算法没办法从上百个点中挑出正好位于四个角的点，需要做改进，将一个标志的所有点做一个坐标平均得到中心坐标，将
+    #  中心坐标进行排序得到三个标志的顺序，而后再用其中一个中心坐标减去其轨迹组内任一点坐标得到Δx和Δy，再分别根据四个标志的顺序±Δx和Δy以得到外角点坐标
+    rects = []
     for pts in cnts:
         assert type(pts) == np.ndarray
         temp = np.zeros((4, 2), dtype='float32')
@@ -117,31 +109,52 @@ def corners_order(cnts: list):
         diff = np.diff(pts, axis=1)  # np.diff(a, n) x为输入的数组，n为差分的次数，执行后一个元素减前一个元素
         # 计算左上和右下
         temp[0] = pts[np.argmin(s)]  # np.argmin无下表时默认将数组展平并输出最小元素的下标
-        temp[2] = pts[np.argmax(s)]
+        temp[3] = pts[np.argmax(s)]
 
         # 计算右上和左下
         temp[1] = pts[np.argmin(diff)]
-        temp[3] = pts[np.argmax(diff)]
-    # TODO(机智的枫树)：corners_order还需完善：将输入的列表的三个标志处理完后存储在列表中并返回列表。
+        temp[2] = pts[np.argmax(diff)]
+
+        rects.append(temp)
+        print('rects:', rects)
+
+    return rects
+
+
+def signs_order(rects: list):
+    # signs_order函数输入corners_order的返回列表并将其中三个标志的各4组行列坐标分别加和除以4代表他们的中心坐标，
+    #  而后继续通过corners_order中的算法判断标志顺序位置，最后计算第四个标志的外角点位置
+    assert type(rects[0]) == np.ndarray
+    rect = np.zeros((4, 2), dtype=np.float32)
+    pts = np.zeros((3, 2), dtype=np.float32)
+    # 将三个标志的各4组角点行列坐标分别加和除以4以代表他们的中心坐标
+    for i in range(len(rects)):
+        pts[i] = rects[i].sum(axis=0) / 4
+    print(pts)
+    print(rects)
+    s = pts.sum(axis=1)
+    diff = np.diff(pts, axis=1)
+    # 根据三个标志的中心坐标找到对应左上、右上和左下的标志外角点
+    rect[0] = rects[np.argmax(s)][0]
+    rect[1] = rects[np.argmin(diff)][1]
+    rect[2] = rects[np.argmax(diff)][2]
+    rect[3, 0] = rect[2, 0] + (rect[1, 0] - rect[0, 0])
+    rect[3, 1] = rect[2, 1] + (rect[1, 1] - rect[0, 1])
+    print(rect)
+
     return rect
 
 
-def signs_order():
-    # TODO(机智的枫树)：signs_order函数输入corners_order的返回列表并将其中三个标志的各4组行列坐标分别加和除以4代表他们的中心坐标，
-    #  而后继续通过corners_order中的算法判断标志顺序位置，最后计算第四个标志的外角点位置
-
-
-def four_point_transform(img, pts):  # 进行图片比例变换
+def four_point_transform(img, rect):  # 进行图片比例变换
     # 获取输入坐标点
-    rect = order_points(pts)
-    (tl, tr, br, bl) = rect  # top left, top right, bottom right, bottom left
+    (tl, tr, bl, br) = rect  # top left, top right, bottom right, bottom left
     # 计算输入的w和h值
-    widthA = np.sqrt(((br[0] - bl[0]) ** 2 + (br[1] - bl[1]) ** 2))
+    widthA = np.sqrt(((bl[0] - br[0]) ** 2 + (bl[1] - br[1]) ** 2))
     widthB = np.sqrt(((tr[0] - tl[0]) ** 2 + (tr[1] - tl[1]) ** 2))
     maxWidth = max(int(widthA), int(widthB))
 
-    heightA = np.sqrt(((tr[0] - br[0]) ** 2 + (tr[1] - br[1]) ** 2))
-    heightB = np.sqrt(((tl[0] - bl[0]) ** 2 + (tl[1] - bl[1]) ** 2))
+    heightA = np.sqrt(((tr[0] - bl[0]) ** 2 + (tr[1] - bl[1]) ** 2))
+    heightB = np.sqrt(((tl[0] - br[0]) ** 2 + (tl[1] - br[1]) ** 2))
     maxHeight = max(int(heightA), int(heightB))
 
     # 变换后对应坐标位置
@@ -162,12 +175,17 @@ def four_point_transform(img, pts):  # 进行图片比例变换
     # 返回变换后结果
     return warped
 
+
 if __name__ == '__main__':
     image = cv2.imread('./QRcode/2.jpg')
     orig = image.copy()
     th1 = preprocess(orig)
-    find_contour(th1)
-    height = 500
-    ratio = image.shape[0] / float(height)
+    cnts = find_contour(th1)
+    rects = corners_order(cnts)
+    rect = signs_order(rects)
+    warped = four_point_transform(image, rect)
+    cv2.imshow('warped', warped)
+    cv2.imwrite('./QRcode/warped.jpg', warped)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 
-    image = resize(image, ht=height)
