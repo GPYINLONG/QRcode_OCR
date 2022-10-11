@@ -17,18 +17,18 @@ def get_parser():
 
     :return: parser
     """
-    parser = argparse.ArgumentParser()
+    par = argparse.ArgumentParser()
 
-    parser.add_argument('-n', '--number', required=True, type=int,
-                        help='Input the number of the picture you wanna process (jpg format needed).')
-    parser.add_argument('-k', '--keyword', choices=['otsu', 'adaptive'], required=True,
-                        help=r'Choose the algorithm of the threshold function between "otsu" and "adaptive".')
-    parser.add_argument('-s', '--scale', required=True, nargs='+',
-                        help='Input m n to divide the picture into m × n blocks.')
-    parser.add_argument('-o', '--output', required=True,
-                        help='Input o to change the number of the output picture.')
+    par.add_argument('-n', '--number', required=True, type=int,
+                     help='Input the number of the picture you wanna process (jpg format needed).')
+    par.add_argument('-k', '--keyword', choices=['otsu', 'adaptive'], required=True,
+                     help=r'Choose the algorithm of the threshold function between "otsu" and "adaptive".')
+    par.add_argument('-s', '--scale', required=True, nargs='+',
+                     help='Input m n to divide the picture into m × n blocks.')
+    par.add_argument('-o', '--output', required=True,
+                     help='Input o to change the number of the output picture.')
 
-    return parser
+    return par
 
 
 def threshold(img, keyword='otsu', max_val=200, adaptive_method=cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
@@ -75,8 +75,8 @@ def divide(img, m, n):
     # 进行图像缩放
     resized = cv2.resize(img, (w, h), cv2.INTER_LINEAR)
     gx, gy = np.meshgrid(np.linspace(0, w, n + 1), np.linspace(0, h, m + 1))
-    gx = gx.astype(np.int)
-    gy = gy.astype(np.int)
+    gx = gx.astype(int)  # np.int在numpy1.20已经被废弃掉了，因此此处用int或者np.int_，np.int32等
+    gy = gy.astype(int)
 
     divided_grey = np.zeros([m, n, grid_h, grid_w], np.uint8)  # 四维张量
     if len(img.shape) == 3:
@@ -192,17 +192,37 @@ def avengers_assemble(blocks_grey):
 
 
 if __name__ == '__main__':
-    image = cv2.imread('./QRcode/1.jpg')
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    fig1 = plt.figure('Origin')
-    plt.axis('off')
-    plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+    parser = get_parser()
+    args = parser.parse_args()
+    n = args.number
+    k = args.keyword
+    s = args.scale
 
-    thr = threshold(gray)
-    fig2 = plt.figure('OTSU')
-    plt.axis('off')
-    plt.imshow(thr, cmap='Greys_r', vmin=0, vmax=255)
+    # 根据输入参数读图
+    image = cv2.imread('./QRcode/' + str(n) + '.jpg')
+    # 读取行列值
+    r, c = int(s[0]), int(s[1])
+    # 高斯模糊
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    image = cv2.GaussianBlur(image, (5, 5), 0)
 
-    divideImg, _ = divide(image, 4, 4)
-    fig3 = plt.figure('Blocks')
-    show_blocks(divideImg)
+    print(10 * '*' + '1st STEP: Divide' + 10 * '*')
+    dividedGrey = divide(image, r, c)
+
+    # 输出图像块，如果没有blocks目录则创建目录
+    print(10 * '*' + '2nd STEP: Show the blocks' + 10 * '*')
+    if os.path.exists('./blocks/'):
+        del_file('./blocks/')
+    else:
+        os.makedirs('./blocks/')
+    show_blocks(dividedGrey)
+
+    print(10 * '*' + '3rd STEP: Process the blocks' + 10 * '*')
+    blocksGrey = process_blocks(dividedGrey, k)
+
+    print(10 * '*' + '4th STEP: Combine the blocks' + 10 * '*')
+    assembled = avengers_assemble(blocksGrey)
+
+    print(10 * '*' + '5th STEP: Output the final QR code' + 10 * '*')
+    o = args.output
+    cv2.imwrite('./QRcode/OUTPUT_EquAf' + str(o) + '_' + str(r) + 'x' + str(c) + '.jpg', assembled)
