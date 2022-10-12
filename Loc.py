@@ -121,6 +121,18 @@ def corners_order(cnts: list):
     return rects
 
 
+def compute_center(cnts: list):
+    # 在矩形框上每隔1/4周长取一个点，计算这四个点的平均坐标作为矩形框的中心坐标
+    assert type(cnts) == np.ndarray
+    l = len(cnts)
+    centers = np.zeros((l, 2), dtype=np.float32)
+    for i in range(l):
+        n = len(cnts[i])
+        centers[i] = (cnts[i][n] + cnts[i][int(n * 3 / 4)] + cnts[i][int(n / 2)] + cnts[i][int(n / 4)]) / 4.0
+
+    return centers
+
+
 # TODO(机智的枫树)：后续需要把根据矩形框的角度把矩形框四个角成比例向外侧移动至括入完整二维码图形
 def extract_min_rect(cnts: list, img: np.ndarray):
     len0 = len(cnts[0])
