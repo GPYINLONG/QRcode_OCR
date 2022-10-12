@@ -121,6 +121,22 @@ def corners_order(cnts: list):
     return rects
 
 
+# TODO(机智的枫树)：后续需要把根据矩形框的角度把矩形框四个角成比例向外侧移动至括入完整二维码图形
+def extract_min_rect(cnts: list, img: np.ndarray):
+    temp = np.zeros((len(cnts[0]) + len(cnts[1]) + len(cnts[2]), 2), dtype=np.float32)
+    print(temp.shape)
+    temp[0: len(cnts[0]), :] = cnts[0]
+    temp[len(cnts[0]): len(cnts[0]) + len(cnts[1]), :] = cnts[1]
+    temp[len(cnts[0]) + len(cnts[1]): len(cnts[0]) + len(cnts[1]) + len(cnts[2]), :] = cnts[2]
+
+    rect = cv2.minAreaRect(temp)
+    box = np.int_(cv2.boxPoints(rect))
+    # cv2.imshow('box', cv2.drawContours(img, [box], -1, 255, 2))
+    cv2.imwrite('./QRcode/box.jpg', cv2.drawContours(img, [box], -1, 255, 2))
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
+
+
 def signs_order(rects: list):
     # signs_order函数输入corners_order的返回列表并将其中三个标志的各4组行列坐标分别加和除以4代表他们的中心坐标，
     #  而后继续通过corners_order中的算法判断标志顺序位置，最后计算第四个标志的外角点位置
@@ -181,6 +197,7 @@ if __name__ == '__main__':
     orig = image.copy()
     th1 = preprocess(orig)
     cnts = find_contour(th1)
+    extract_min_rect(cnts, orig)
     rects = corners_order(cnts)
     rect = signs_order(rects)
     warped = four_point_transform(image, rect)
