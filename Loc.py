@@ -123,11 +123,14 @@ def corners_order(cnts: list):
 
 # TODO(机智的枫树)：后续需要把根据矩形框的角度把矩形框四个角成比例向外侧移动至括入完整二维码图形
 def extract_min_rect(cnts: list, img: np.ndarray):
-    temp = np.zeros((len(cnts[0]) + len(cnts[1]) + len(cnts[2]), 2), dtype=np.float32)
+    len0 = len(cnts[0])
+    len1 = len(cnts[1])
+    len2 = len(cnts[2])
+    temp = np.zeros((len0 + len1 + len2, 2), dtype=np.float32)
     print(temp.shape)
-    temp[0: len(cnts[0]), :] = cnts[0]
-    temp[len(cnts[0]): len(cnts[0]) + len(cnts[1]), :] = cnts[1]
-    temp[len(cnts[0]) + len(cnts[1]): len(cnts[0]) + len(cnts[1]) + len(cnts[2]), :] = cnts[2]
+    temp[0: len0, :] = cnts[0]
+    temp[len0: len0 + len1, :] = cnts[1]
+    temp[len0 + len1: len0 + len1 + len2, :] = cnts[2]
 
     rect = cv2.minAreaRect(temp)
     box = np.int_(cv2.boxPoints(rect))
