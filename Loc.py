@@ -8,7 +8,6 @@ import cv2
 import numpy as np
 
 
-# TODO(机智的枫树)：本部分目的为锁定二维码范围并且切割放大
 def preprocess(img, show=True):
     """
     Preprocess the image input image
@@ -18,14 +17,14 @@ def preprocess(img, show=True):
     """
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     gray = cv2.blur(gray, (3, 3))  # 应用平滑滤波去除部分噪音点
-    gray_equ = cv2.equalizeHist(gray)
+    # gray_equ = cv2.equalizeHist(gray)
     # ret, th = cv2.threshold(gray_equ, 112, 255, cv2.THRESH_BINARY)
-    ret, th = cv2.threshold(gray_equ, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)  # otsu效果更好
+    ret, th = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)  # otsu效果更好
 
     if show:
         cv2.namedWindow('gray')
         cv2.namedWindow('threshold')
-        cv2.imshow('gray', gray_equ)
+        cv2.imshow('gray', gray)
         cv2.imshow('threshold', th)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
@@ -68,9 +67,7 @@ def find_contour(img, draw=True):
     cv2.destroyAllWindows()
     if draw:
         cv2.imwrite('./QRcode/Contours.jpg', drawing)
-    print(cnts2[0].shape)
-    print(cnts2[1].shape)
-    print(cnts2[2].shape)
+
     return cnts2
 
 
@@ -119,24 +116,29 @@ def signs_order(centers: np.ndarray):
     else:
         rect[1] = centers[np.argmax(centers[:, 1])]
         rect[2] = centers[np.argmin(centers[:, 1])]
-    rect[3] = rect[1] + rect[2] - rect[0]
+
     return rect, max_index
 
 
 def compute_rdc(rect: np.ndarray, cnts: list, index):
     """
-    Compute the right down contour.
+    Compute the right down contour and center.
     :param rect: np.ndarray
     :param cnts: list
-    :return: cnts
+    :return: cnts, rect
     """
-    rdc = cnts[index] + (rect[3] - rect[0])
+    # 加入S为形变系数进行考虑
+    a = cv2.contourArea(cnts[index])
+    d = np.sqrt((cv2.contourArea(cnts[index - 1]) / a) * (cv2.contourArea(cnts[index - 2]) / a))
+    print('Deformation Coefficient: D = ', d)
+
+    rect[3] = d * (rect[1] + rect[2] - rect[0])
+    rdc = cnts[index] + (rect[3] - rect[0]) / d
     cnts.append(rdc)
-    return cnts
+    return cnts, rect
 
 
-# TODO(机智的枫树)：后续需要把根据矩形框的角度把矩形框四个角成比例向外侧移动至括入完整二维码图形
-def extract_min_rect(cnts: list, img: np.ndarray):
+def extract_min_rect(cnts: list, img: np.ndarray, rect: np.ndarray):
     len0 = len(cnts[0])
     len1 = len(cnts[1])
     len2 = len(cnts[2])
@@ -147,14 +149,19 @@ def extract_min_rect(cnts: list, img: np.ndarray):
     temp[len0 + len1: len0 + len1 + len2, :] = cnts[2]
     temp[len0 + len1 + len2: len0 + len1 + len2 + len3, :] = cnts[3]
 
-    rect = cv2.minAreaRect(temp)
-    box = np.int_(cv2.boxPoints(rect))
-    cv2.imwrite('./QRcode/box.jpg', cv2.drawContours(img, [box], -1, (0, 0, 255), 2))
+    rect_min = cv2.minAreaRect(temp)
+    box = np.int_(cv2.boxPoints(rect_min))
+    cv2.imwrite('QRcode/box.jpg', cv2.drawContours(img, [box], -1, (0, 0, 255), 2))
+    box_match = np.zeros((4, 2), dtype=np.float32)
+    for i in range(4):
+        d = np.abs(rect - box[i])
+        box_match[np.argmin(d.sum(axis=1))] = box[i]
+    return box_match
 
 
-def four_point_transform(img, rect):  # 进行图片比例变换
+def four_point_transform(img, box):  # 进行图片比例变换
     # 获取输入坐标点
-    (tl, tr, bl, br) = rect  # top left, top right, bottom right, bottom left
+    (tl, tr, bl, br) = box  # top left, top right, bottom right, bottom left
     # 计算输入的w和h值
     width_a = np.sqrt(((bl[0] - br[0]) ** 2 + (bl[1] - br[1]) ** 2))
     width_b = np.sqrt(((tr[0] - tl[0]) ** 2 + (tr[1] - tl[1]) ** 2))
@@ -174,7 +181,7 @@ def four_point_transform(img, rect):  # 进行图片比例变换
     # cv2.getPerspectiveTransform(src, dst) → retval，将成像投影到一个新的视平面
     # 参数：src：源图像中待测矩形的四点坐标；sdt：目标图像中矩形的四点坐标；
     # 返回由源图像中矩形到目标图像矩形变换的矩阵
-    M = cv2.getPerspectiveTransform(rect, dst)
+    M = cv2.getPerspectiveTransform(box, dst)
     # cv2.warpPerspective(src, M, dsize, dst=None, flags=None, borderMode=None, borderValue=None) --> dst，
     # 透视变换函数，可保持直线不变形，但是平行线可能不再平行
     # 参数：src：输入图像；dst：输出图像；M：变换矩阵；dsize：变换后输出图像尺寸；flag：插值方法；borderMode：边界像素外扩方式；borderValue：边界像素插值，默认用0填充
@@ -183,18 +190,25 @@ def four_point_transform(img, rect):  # 进行图片比例变换
     return warped
 
 
-if __name__ == '__main__':
-    image = cv2.imread('./QRcode/2.jpg')
-    orig = image.copy()
+def loc_run(img):
+    orig = img.copy()
     th1 = preprocess(orig)
     cnts = find_contour(th1)
     centers = compute_center(cnts)
     rect, index = signs_order(centers)
-    cnts = compute_rdc(rect, cnts, index)
-    extract_min_rect(cnts, orig)
-    warped = four_point_transform(image, rect)
-    cv2.imshow('warped', warped)
+    cnts, rect = compute_rdc(rect, cnts, index)
+    box = extract_min_rect(cnts, orig, rect)
+    warped = four_point_transform(img, box)
     cv2.imwrite('./QRcode/warped.jpg', warped)
+    print(10 * '*' + 'Localization Process End' + 10 * '*')
+
+    return warped
+
+
+if __name__ == '__main__':
+    image = cv2.imread('./QRcode/6.jpg')
+    warped = loc_run(image)
+    cv2.imshow('warped', warped)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
