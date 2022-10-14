@@ -195,7 +195,7 @@ def process_run(img, keyword: str, row: int, colum: int):
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     img = cv2.GaussianBlur(img, (5, 5), 0)
 
-    divided_grey = divide(img, r, c)
+    divided_grey = divide(img, row, colum)
 
     # 输出图像块，如果没有blocks目录则创建目录
     if os.path.exists('./blocks/'):
@@ -203,8 +203,9 @@ def process_run(img, keyword: str, row: int, colum: int):
     else:
         os.makedirs('./blocks/')
     show_blocks(divided_grey)
-    blocks_grey = process_blocks(divided_grey, k)
+    blocks_grey = process_blocks(divided_grey, keyword)
     assembled = avengers_assemble(blocks_grey)
+    print(10 * '*' + 'Picture Processing Finished' + 10 * '*')
 
     return assembled
 

@@ -200,7 +200,7 @@ def loc_run(img):
     box = extract_min_rect(cnts, orig, rect)
     warped = four_point_transform(img, box)
     cv2.imwrite('./QRcode/warped.jpg', warped)
-    print(10 * '*' + 'Localization Process End' + 10 * '*')
+    print(10 * '*' + 'Localization Process Finished' + 10 * '*')
 
     return warped
 
