@@ -17,6 +17,7 @@ s = args.scale
 
 # 根据输入参数读图
 image = cv2.imread('./QRcode/' + str(n) + '.jpg')
+
 warped = Loc.loc_run(image)
 
 r, c = int(s[0]), int(s[1])

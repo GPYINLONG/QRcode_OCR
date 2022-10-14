@@ -40,6 +40,8 @@
 ### 对目标二
 在图像预处理步骤添加了高斯滤波步骤，对输入复现[1]中算法输出的二维码信息恢复效果有了一定的提升，并且
 <br>尝试了将图像分割成更多的子块进行处理，效果如前所述。
+### 对目标三
+使用pyzbar包对经过前两步处理的二维码进行识别并输出识别结果。
 
 ## References
 > [1] 屈卫锋, 徐越, 牛磊磊,等. 光照不均QR二维码图像的高效处理方法研究[J]. 软件, 2015(6):6.
@@ -51,3 +53,5 @@
 > [4] 二维码的特征定位和信息识别 https://blog.csdn.net/iamqianrenzhan/article/details/79117119
 > 
 > [5] OpenCV二维码检测与定位 http://www.manongjc.com/detail/50-whhxujelpahjvil.html
+> 
+> [6] 详解利用python识别图片中的条码（pyzbar）及条码图片矫正和增强 https://www.jb51.net/article/199839.htm
